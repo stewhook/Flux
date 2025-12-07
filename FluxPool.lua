@@ -1,9 +1,27 @@
+--[[
+Created by stewhook.
+FluxPool is a modular object pooling library designed for simplicity and scalability.
+Open-source and maintained at: https://github.com/stewhook/FluxPool
+Report any issues at the github above. Feel free to contribute. Godspeed.
+
+__/\\\\\\\\\\\\\\\__/\\\______________/\\\________/\\\__/\\\_______/\\\_        
+ _\/\\\///////////__\/\\\_____________\/\\\_______\/\\\_\///\\\___/\\\/__       
+  _\/\\\_____________\/\\\_____________\/\\\_______\/\\\___\///\\\\\\/____      
+   _\/\\\\\\\\\\\_____\/\\\_____________\/\\\_______\/\\\_____\//\\\\______     
+    _\/\\\///////______\/\\\_____________\/\\\_______\/\\\______\/\\\\______    
+     _\/\\\_____________\/\\\_____________\/\\\_______\/\\\______/\\\\\\_____   
+      _\/\\\_____________\/\\\_____________\//\\\______/\\\_____/\\\////\\\___  
+       _\/\\\_____________\/\\\\\\\\\\\\\\\__\///\\\\\\\\\/____/\\\/___\///\\\_ 
+        _\///______________\///////////////_____\/////////_____\///_______\///__
+]]--
+
+
 --!strict
 
 local Pool = {}
 Pool.__index = Pool
 
--- Generic helpers
+-- Generics
 export type InstanceList<I> = { I }
 export type InstanceMap<I, T> = { [I]: T? }
 export type ConnectionMap<I> = { [I]: RBXScriptConnection }
@@ -17,35 +35,118 @@ export type Pool<I, O> = {
 	size: number,
 	timeout: number,
 
-	-- Where live / in-use instances are parented
 	hotSpot: Instance,
-	-- Where pooled / idle instances are parented
 	coldSpot: Instance,
 
-	-- Bookkeeping lists for instances
 	hotStorage: InstanceList<I>,
 	coldStorage: InstanceList<I>,
 
-	-- Destroying connections per-instance
 	connections: ConnectionMap<I>,
 	activeTimeouts: TimeoutMap<I>,
 
 	factoryFunction: FactoryFn<I>,
 
-	_getInstanceTotal: (self: Pool<I, O>) -> number,
-	_needConstruct: (self: Pool<I, O>, amount: number?) -> boolean,
+	-- Public API
 	construct: (
 		self: Pool<I, O>,
 		constructFunction: ConstructFn<I, O>,
 		constructOpts: O?
 	) -> I?,
 	store: (self: Pool<I, O>, part: I) -> (),
-	_queueTake: (self: Pool<I, O>) -> I?,
-	_destroyListener: (self: Pool<I, O>, part: I) -> (),
-	_removeTimeout: (self: Pool<I, O>, part: I) -> (),
-	_startTimeout: (self: Pool<I, O>, part: I) -> (),
-	_swapArray: (self: Pool<I, O>, part: I, startList: InstanceList<I>, endList: InstanceList<I>) -> (),
 }
+
+-- ==== PRIVATE API ==== Private helper functions. These are not exported to users but they are critical.
+
+local function _swapArray<I, O>(
+	self: Pool<I, O>,
+	part: I,
+	startList: InstanceList<I>,
+	endList: InstanceList<I>
+): ()
+	for i, obj in ipairs(startList) do
+		if part == obj then
+			table.remove(startList, i)
+			table.insert(endList, part)
+			break
+		end
+	end
+end
+
+local function _getInstanceTotal<I, O>(self: Pool<I, O>): number
+	return #self.coldStorage + #self.hotStorage
+end
+
+local function _needConstruct<I, O>(self: Pool<I, O>, amount: number?): boolean
+	amount = amount or 1
+
+	local instanceCount: number = _getInstanceTotal(self)
+	if instanceCount + (amount :: number) > self.size then
+		return false
+	end
+
+	return true
+end
+
+-- Queue stack data structure. Return the oldest instance and re-append to the end.
+local function _queueTake<I, O>(self: Pool<I, O>): I?
+	local oldest: I?
+
+	-- First check coldstorage, if coldstorage is empty we just take the last object from hotstorage.
+	if #self.coldStorage > 0 then
+		oldest = table.remove(self.coldStorage, 1)
+	elseif #self.hotStorage > 0 then
+		oldest = table.remove(self.hotStorage, 1)
+	else
+		error("[FluxPool] There is no instance in any storage to take.")
+		return nil
+	end
+	return oldest
+end
+
+local function _removeTimeout<I, O>(self: Pool<I, O>, part: I): ()
+	if not self.activeTimeouts[part] then
+		return
+	end
+	self.activeTimeouts[part] = nil
+end
+
+local function _startTimeout<I, O>(self: Pool<I, O>, part: I): ()
+	if self.timeout <= 0 then
+		return
+	end -- Timeout of 0 equals no timeout.
+
+	self.activeTimeouts[part] = DateTime.now().UnixTimestamp + self.timeout
+end
+
+local function _destroyListener<I, O>(self: Pool<I, O>, part: I): ()
+	if self.connections[part] then return end
+	local connection: RBXScriptConnection = (part :: any).Destroying:Connect(function()
+		_removeTimeout(self, part)
+
+		local conn = self.connections[part]
+		if conn ~= nil then
+			conn:Disconnect()
+			self.connections[part] = nil
+		end
+
+		for i, obj in ipairs(self.hotStorage) do
+			if obj == part then
+				table.remove(self.hotStorage, i)
+				return
+			end
+		end
+		for i, obj in ipairs(self.coldStorage) do
+			if obj == part then
+				table.remove(self.coldStorage, i)
+				return
+			end
+		end
+		return
+	end)
+	self.connections[part] = connection
+end
+
+-- ==== PUBLIC API ==== Anything below this point is readily accessible by users.
 
 function Pool.new<I, O>(
 	size: number, -- Max size of the pool.
@@ -81,7 +182,7 @@ function Pool.new<I, O>(
 				if currentTime < timeoutTime then
 					continue
 				end
-				self:_removeTimeout(object)
+				_removeTimeout(self, object)
 				self:store(object)
 			end
 			task.wait(1)
@@ -89,95 +190,6 @@ function Pool.new<I, O>(
 	end)
 
 	return self
-end
-
-function Pool._swapArray<I, O>(
-	self: Pool<I, O>,
-	part: I,
-	startList: InstanceList<I>,
-	endList: InstanceList<I>
-): ()
-	for i, obj in ipairs(startList) do
-		if part == obj then
-			table.remove(startList, i)
-			table.insert(endList, part)
-			break
-		end
-	end
-end
-
-function Pool._getInstanceTotal<I, O>(self: Pool<I, O>): number
-	return #self.coldStorage + #self.hotStorage
-end
-
-function Pool._needConstruct<I, O>(self: Pool<I, O>, amount: number?): boolean
-	amount = amount or 1
-
-	local instanceCount: number = self:_getInstanceTotal()
-	if instanceCount + (amount :: number) > self.size then
-		return false
-	end
-
-	return true
-end
-
--- Queue stack data structure. Return the oldest instance and re-append to the end.
-function Pool._queueTake<I, O>(self: Pool<I, O>): I?
-	local oldest: I?
-
-	-- First check coldstorage, if coldstorage is empty we just take the last object from hotstorage.
-	if #self.coldStorage > 0 then
-		oldest = table.remove(self.coldStorage, 1)
-	elseif #self.hotStorage > 0 then
-		oldest = table.remove(self.hotStorage, 1)
-	else
-		error("[FluxPool] There is no instance in any storage to take.")
-		return nil
-	end
-	return oldest
-end
-
-function Pool._destroyListener<I, O>(self: Pool<I, O>, part: I): ()
-	if self.connections[part] then return end
-	local connection: RBXScriptConnection = (part :: any).Destroying:Connect(function()
-		self:_removeTimeout(part)
-
-		local conn = self.connections[part]
-		if conn ~= nil then
-			conn:Disconnect()
-			self.connections[part] = nil
-		end
-
-		for i, obj in ipairs(self.hotStorage) do
-			if obj == part then
-				table.remove(self.hotStorage, i)
-				return
-			end
-		end
-		for i, obj in ipairs(self.coldStorage) do
-			if obj == part then
-				table.remove(self.coldStorage, i)
-				return
-			end
-		end
-		return
-	end)
-	self.connections[part] = connection
-end
-
-function Pool._removeTimeout<I, O>(self: Pool<I, O>, part: I): ()
-	if not self.activeTimeouts[part] then
-		return
-	end
-	self.activeTimeouts[part] = nil
-end
-
-function Pool._startTimeout<I, O>(self: Pool<I, O>, part: I): ()
-	if self.timeout <= 0 then
-		return
-	end -- Timeout of 0 equals no timeout.
-
-	self.activeTimeouts[part] = DateTime.now().UnixTimestamp + self.timeout
 end
 
 function Pool.construct<I, O>(
@@ -189,10 +201,10 @@ function Pool.construct<I, O>(
 
 	local object: I?
 
-	if self:_needConstruct() then
+	if _needConstruct(self) then
 		object = self.factoryFunction()
 	else
-		object = self:_queueTake()
+		object = _queueTake(self)
 	end
 
 	if constructOpts then
@@ -202,20 +214,20 @@ function Pool.construct<I, O>(
 	end
 
 	table.insert(self.hotStorage, object :: I)
-	self:_destroyListener(object :: I)
-	self:_startTimeout(object)
-	
+	_destroyListener(self, object :: I)
+	_startTimeout(self, object :: I)
+
 	local inst = object :: Instance
 	if inst.Parent ~= self.hotSpot then
 		inst.Parent = self.hotSpot
 	end
-	
+
 	return object
 end
 
 function Pool.store<I, O>(self: Pool<I, O>, part: I): ()
-	self:_swapArray(part, self.hotStorage, self.coldStorage)
-	self:_removeTimeout(part)
+	_swapArray(self, part, self.hotStorage, self.coldStorage)
+	_removeTimeout(self, part)
 	local inst = part :: Instance
 	inst.Parent = self.coldSpot
 end
