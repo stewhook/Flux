@@ -166,6 +166,7 @@ end
 local function _removeFromQueues<I, O>(self: Pool<I, O>, part: I): ()
 	local info = self._indexMap[part]
 	if info == nil then
+		error("[FluxPool] There is no instance in any queue.")
 		return
 	end
 
@@ -311,10 +312,8 @@ function Pool.construct<I, O>(
 	-- Decide whether to construct a new instance or recycle from storage
 	if _needConstruct(self) then
 		object = self.factoryFunction()
-		print("From Scratch")
 	else
 		object = _queueTake(self)
-		print("From Queue")	
 	end
 
 	if constructOpts then
