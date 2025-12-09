@@ -54,8 +54,8 @@ Building the pool foundation.
 ```luau
 local pool = Flux.new()
 pool.size = 100 -- Max instances in the pool.
-pool._hotSpot = Workspace -- Where instances go when created.
-pool._coldSpot = ReplicatedStorage -- Where instances go when stored.
+pool.hotSpot = Workspace -- Where instances go when created.
+pool.coldSpot = ReplicatedStorage -- Where instances go when stored.
 pool.timeout = 10 -- How long instances exist before being automatically cleaned (set this to 0 for no timeout)
 pool.factoryFunction = function()
 	local block = Instance.new("Part")
