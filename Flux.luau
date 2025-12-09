@@ -1,5 +1,5 @@
 --[[
-v1.1.0
+v1.1.1
 Created by stewhook.
 Flux is a modular object pooling framework designed for simplicity and scalability.
 Open-source and maintained at: https://github.com/stewhook/FluxPool
@@ -14,7 +14,6 @@ __/\\\\\\\\\\\\\\\__/\\\______________/\\\________/\\\__/\\\_______/\\\_
       _\/\\\_____________\/\\\_____________\//\\\______/\\\_____/\\\////\\\___  
        _\/\\\_____________\/\\\\\\\\\\\\\\\__\///\\\\\\\\\/____/\\\/___\///\\\_ 
         _\///______________\///////////////_____\/////////_____\///_______\///__
-
 ]]--
 
 --!strict
@@ -22,7 +21,7 @@ __/\\\\\\\\\\\\\\\__/\\\______________/\\\________/\\\__/\\\_______/\\\_
 local Pool = {}
 Pool.__index = Pool
 
--- Generic helpers / types
+-- Generics
 
 export type InstanceList<I> = { I? }
 export type ConnectionMap<I> = { [I]: RBXScriptConnection }
