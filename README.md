@@ -1,4 +1,15 @@
 # stewhook — Flux
+```sql
+__/\\\\\\\\\\\\\\\__/\\\______________/\\\________/\\\__/\\\_______/\\\_        
+ _\/\\\///////////__\/\\\_____________\/\\\_______\/\\\_\///\\\___/\\\/__       
+  _\/\\\_____________\/\\\_____________\/\\\_______\/\\\___\///\\\\\\/____      
+   _\/\\\\\\\\\\\_____\/\\\_____________\/\\\_______\/\\\_____\//\\\\______     
+    _\/\\\///////______\/\\\_____________\/\\\_______\/\\\______\/\\\\______    
+     _\/\\\_____________\/\\\_____________\/\\\_______\/\\\______/\\\\\\_____   
+      _\/\\\_____________\/\\\_____________\//\\\______/\\\_____/\\\////\\\___  
+       _\/\\\_____________\/\\\\\\\\\\\\\\\__\///\\\\\\\\\/____/\\\/___\///\\\_ 
+        _\///______________\///////////////_____\/////////_____\///_______\///__
+```
 Flux is a fast, modular, and scalable instance pooling framework that handles all back-end logic required to create an efficient instance pool while giving you the flexibility to create & recycle objects with custom (and potentially dynamic) logic / data.
 
 ## ❔ How does it work?
@@ -16,11 +27,22 @@ Flux (by default) operates using an O(1) queue datastructure. Recycling the olde
 3. Apply the Construction Function to the retrieved instance.
 4. Cycle the instance through the pool.
 
-## ⚙️ Installation
-### Install from Roblox
-You can download the model from Roblox here.
-### Install from Wally
-Wally install logic etc etc
+## 📖 API Reference
+### Public Fields (Config)
+`pool.size : number`\
+`pool.timeout : number`\
+`pool.hotSpot : Instance`\
+`pool.coldSpot : Instance`\
+`pool.factoryFunction : () -> Instance`
+
+### Public Methods
+`Flux.new(config?) -> pool`\
+`pool:construct(constructFn, opts) -> instance`\
+`pool:store(instance)`\
+`pool:destroy(instance)`\
+`pool:wipe()`\
+`pool:getActiveCount() -> number`\
+`pool:getIdleCount() -> number`
 
 ## 👀 Usage
 ### Importing Flux
@@ -81,3 +103,9 @@ In the event you'd like to manually store an instance into cold storage. Run poo
 -- Example
 pool:store(instance)
 ```
+
+## ⚙️ Installation
+### Install from Roblox
+You can download the model from Roblox here.
+### Install from Wally
+Wally install logic etc etc
