@@ -1,0 +1,10 @@
+[package]
+name = "stewhook/flux"
+version = "1.1.4"
+registry = "https://github.com/UpliftGames/wally-index"
+repository = "https://github.com/stewhook/Flux"
+description = "A modular, high-performance object pooling framework for Roblox"
+license = "MIT"
+realm = "shared"
+
+[dependencies]

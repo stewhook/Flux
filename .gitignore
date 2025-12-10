@@ -1,0 +1,8 @@
+.git
+.github
+rokit.toml
+*.psd
+*.png
+*.jpg
+*.tmp
+*.lock

@@ -1,8 +1,8 @@
 --[[
-v1.1.1
+v1.1.4
 Created by stewhook.
 Flux is a modular object pooling framework designed for simplicity and scalability.
-Open-source and maintained at: https://github.com/stewhook/FluxPool
+Open-source and maintained at: https://github.com/stewhook/Flux
 Report any issues to the github above. Feel free to contribute. Godspeed.
 
 __/\\\\\\\\\\\\\\\__/\\\______________/\\\________/\\\__/\\\_______/\\\_        
