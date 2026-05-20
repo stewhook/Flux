@@ -1,27 +1,16 @@
-# stewhook — Flux
-```sql
-__/\\\\\\\\\\\\\\\__/\\\______________/\\\________/\\\__/\\\_______/\\\_        
- _\/\\\///////////__\/\\\_____________\/\\\_______\/\\\_\///\\\___/\\\/__       
-  _\/\\\_____________\/\\\_____________\/\\\_______\/\\\___\///\\\\\\/____      
-   _\/\\\\\\\\\\\_____\/\\\_____________\/\\\_______\/\\\_____\//\\\\______     
-    _\/\\\///////______\/\\\_____________\/\\\_______\/\\\______\/\\\\______    
-     _\/\\\_____________\/\\\_____________\/\\\_______\/\\\______/\\\\\\_____   
-      _\/\\\_____________\/\\\_____________\//\\\______/\\\_____/\\\////\\\___  
-       _\/\\\_____________\/\\\\\\\\\\\\\\\__\///\\\\\\\\\/____/\\\/___\///\\\_ 
-        _\///______________\///////////////_____\/////////_____\///_______\///__
-```
-Flux is a fast, modular, and scalable instance pooling framework that handles all back-end logic required to create an efficient instance pool while giving you the flexibility to create & recycle objects with custom (and potentially dynamic) logic / data.
+# stewhook — Recycle
+Recycle is a fast, modular, and scalable instance pooling framework that handles all back-end logic required to create an efficient instance pool while giving you the flexibility to create & recycle objects with custom (and potentially dynamic) logic / data.
 
 ## ❔ How does it work?
-Flux manages your instances across two internal pools: Hot Storage (active & in use), and Cold Storage (idle & stored away).
-When creating an instance, Flux will first check to see if the pool is at capacity.
+Recycle manages your instances across two internal pools: Hot Storage (active & in use), and Cold Storage (idle & stored away).
+When creating an instance, Recycle will first check to see if the pool is at capacity.
 
-Flux (by default) operates using an O(1) queue datastructure. Recycling the oldest instances, prioritizing cold state over hot state. This results in an extremely fast pooling framework that maintains speed regardless of pool size.
-#### If the object pool isn't at capacity, Flux will:
+Recycle (by default) operates using an O(1) queue datastructure. Recycling the oldest instances, prioritizing cold state over hot state. This results in an extremely fast pooling framework that maintains speed regardless of pool size.
+#### If the object pool isn't at capacity, Recycle will:
 1. Create an instance from scratch using your Factory Function.
 2. Apply the Construction Function to the created instance.
 3. Add this instance to the pool.
-#### If the object pool is at capacity, Flux will:
+#### If the object pool is at capacity, Recycle will:
 1. Check Cold Storage and retrieve the oldest instance.
 2. If Cold Storage is empty it, retrieve the oldest instance from Hot Storage.
 3. Apply the Construction Function to the retrieved instance.
@@ -36,7 +25,7 @@ Flux (by default) operates using an O(1) queue datastructure. Recycling the olde
 `pool.factoryFunction : () -> Instance`
 
 ### Public Methods
-`Flux.new(config?) -> pool`\
+`Recycle.new(config?) -> pool`\
 `pool:construct(constructFn, opts) -> instance`\
 `pool:store(instance)`\
 `pool:destroy(instance)`\
@@ -45,14 +34,14 @@ Flux (by default) operates using an O(1) queue datastructure. Recycling the olde
 `pool:getIdleCount() -> number`
 
 ## 👀 Usage
-### Importing Flux
+### Importing Recycle
 ```luau
-local Flux = require(ReplicatedStorage.Flux)
+local Recycle = require(ReplicatedStorage.Recycle)
 ```
 ### Creating & Configuring a Pool
 Building the pool foundation.
 ```luau
-local pool = Flux.new()
+local pool = Recycle.new()
 pool.size = 100 -- Max instances in the pool.
 pool.hotSpot = Workspace -- Where instances go when created.
 pool.coldSpot = ReplicatedStorage -- Where instances go when stored.
@@ -106,9 +95,9 @@ pool:store(instance)
 
 ## ⚙️ Installation
 ### Install from Roblox
-[Download the model from the Roblox library.](https://create.roblox.com/store/asset/120278572872003/Flux)
+[Download the model from the Roblox library.](https://create.roblox.com/store/asset/120278572872003/Recycle)
 ### Install from Wally
 ```
-flux = "stewhook/flux@1.2.0"
+Recycle = "stewhook/Recycle@1.2.0"
 ```
-[Or download from Wally's website.](https://wally.run/package/stewhook/flux?version=1.2.0)
+[Or download from Wally's website.](https://wally.run/package/stewhook/Recycle?version=1.2.0)
